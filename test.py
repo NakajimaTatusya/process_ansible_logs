@@ -42,14 +42,14 @@ class Tsv:
     def __str__(self):
         cnt = 0
         ret = ""
-        for col in self.data:
-            print(col)
-            if cnt == 0:
-                ret += col
-            else:
-                ret += "\t" + col
-            cnt += 1
-        return ret
+#        for col in self.data:
+#            print(col)
+#            if cnt == 0:
+#                ret += col
+#            else:
+#                ret += "\t" + col
+#            cnt += 1
+#        return ret
 
 
 def create_tsv_from_JSON(json):  # root case
