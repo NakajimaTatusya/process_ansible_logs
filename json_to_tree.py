@@ -27,9 +27,13 @@ class TreeNode(object):
     def __init__(self, data):
         self.data = data
         self.children = []
+        self.value = None
 
     def add_child(self, obj):
         self.children.append(obj)
+
+    def setValue(self, val):
+        self.value = val
 
     def __str__(self, level=0):
         ret = "\t" * level + repr(self.data) + "\n"
