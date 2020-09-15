@@ -5,7 +5,7 @@
 
 ## 標準出力のログ
 
-* JSON 形式を加工するか、標準形式を加工するか、現在検討中
+* 既定の出力を変換する
 
 ## ログファイル
 
@@ -18,3 +18,14 @@
 * Excel File に加工する
 * MD → Word 変換を行う
 * 画面で参照できるようにする
+
+## ソースコード
+
+| ファイル名 | 内容 |
+| :--- | :--- |
+| json_to_tree.py | JSON を Tree に展開する |
+| log_decomposition.py | 標準出力のログをファイルへ保存したものを整形する |
+| log_formatter.py | ansible log ファイルを整形する |
+| setting.cfg | アプリケーション設定ファイル |
+| unicode_escape_to_character.py | unicode-escape されたマルチバイト文字列を元に戻す |
+
