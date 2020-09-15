@@ -14,9 +14,12 @@ import json
 
 from datetime import datetime as DT
 from datetime import timedelta as TDELTA
+
 from library import decode_unicode_escape
 from library import TaskLog
 from library import TaskInfo
+from library import Result
+from library import Results
 
 # ログのTASK行をマッチング
 PATTERN_TASK_ROW = r'^TASK \[.*\]'
@@ -31,43 +34,16 @@ PATTERN_JSON_INFO_END = r'^\}$'
 PATTERN_DELETE_ANSIBLE_SGIN = r'^.*: \[.*\] => '
 
 _stdout_logs_path = ""
+_output_logs_path = ""
 def ReadConfig():
     global _stdout_logs_path
+    global _output_logs_path
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
         _stdout_logs_path = config.get('DEFAULT', 'LOG_FILE_PLACE') + '*'
-
-
-class InformationEntity:
-    def __init__(self):
-        self.fieldName = ""
-        self.fieldValue = ""
-
-    def __str__(self):
-        return "| {0} | {1} |\n".format(self.fieldName, self.fieldValue)
-
-
-class InformationEntities:
-    IndexCount = 0
-
-    def __init__(self):
-        self.data = []
-
-    def addInfo(self, info):
-        self.data.append(info)
-        self.IndexCount += 1
-
-    def __str__(self):
-        strWk = "| 項目名 | 値 |\n"
-        strWk += "| :--- | :--- |\n"
-        for info in self.data:
-            strWk += info.__str__()
-        return strWk
-
-    def getIndedxCount(self):
-        return self.IndexCount
+        _output_logs_path = config.get('DEFAULT', 'OUTPUT_MD_LOG')
 
 
 def _recursively(json, strage):
@@ -84,7 +60,7 @@ def _recursively(json, strage):
         elif key == 'stdout':
             pass
         else:
-            tmp = InformationEntity()
+            tmp = Result.Result()
             tmp.fieldName = key
             tmp.fieldValue = json[key]
             strage.addInfo(tmp)
@@ -179,13 +155,26 @@ if __name__ == '__main__':
                 
                 row_data = fHnd.readline()
 
-            with open('test_result.md', 'w') as f:
-                title = "# 整形対象ファイル名：{0}\n".format(tasks.getLogFileName())
+            # TASK実行結果一覧表
+            listTaskResult = os.path.splitext(os.path.basename(logfile))[0]
+            taskListPath = "{0}Result_{1}_task_list.md".format(_output_logs_path, listTaskResult)
+            with open(taskListPath, 'w') as hFnd:
+                title = "# タスク実行結果リスト\n\n"
+                hFnd.write(title)
+                subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
+                hFnd.write(subtitle)
+                hFnd.write(tasks.getTaskResultList())
+
+            # タスク実行結果詳細出力
+            taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_logs_path, listTaskResult)
+            with open(taskDetailPath, 'w') as f:
+                title = "# タスク実行結果詳細\n\n"
                 f.write(title)
-                f.write("\n")
+                subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
+                f.write(subtitle)
 
                 for entity in tasks.row_data:
-                    infos = InformationEntities()
+                    infos = Results.Results()
                     f.write(str(entity))
                     if entity.message != {}:
                         _recursively(entity.message, infos)

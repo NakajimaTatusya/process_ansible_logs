@@ -17,7 +17,10 @@ class TaskInfo:
         self.message = {}
 
     def __str__(self):
-        return "## {0}\t{1}\t{2}\t{3}\t{4}\t{5}\n".format(self.task_order, self.hostname, self.name, self.result_status, self.exec_datetime, self.elasped)
+        strWk = "| # | HOSTNAME | TASK 名 | 結果 | 実行日時 | 経過時間 |\n"
+        strWk += "| ---: | :--- | :--- | :--- | :--- | :--- |\n"
+        strWk += "| {0} | {1} | {2} | {3} |{4} | {5} |\n\n".format(self.task_order, self.hostname, self.name, self.result_status, self.exec_datetime, self.elasped)
+        return strWk
 
     def getJsonStr(self):
         return json.dumps(self.message)
