@@ -6,11 +6,15 @@ ansible 標準出力のログをフォーマットする
  strategy : linear strategy
 """
 
+# pip install configparser
 import configparser
 import os
 import glob
 import re
 import json
+# pip install pyyaml
+import yaml
+import pprint
 
 from datetime import datetime as DT
 from datetime import timedelta as TDELTA
@@ -21,6 +25,8 @@ from library import TaskInfo
 from library import Result
 from library import Results
 
+# Play 行にマッチング
+PATTERN_PLAY = r'^PLAY \[.*\]'
 # ログのTASK行をマッチング
 PATTERN_TASK_ROW = r'^TASK \[.*\]'
 # ログの実行日時行にマッチング
@@ -35,15 +41,18 @@ PATTERN_DELETE_ANSIBLE_SGIN = r'^.*: \[.*\] => '
 
 _stdout_logs_path = ""
 _output_logs_path = ""
+_ansible_hosts_path = ""
 def ReadConfig():
     global _stdout_logs_path
     global _output_logs_path
+    global _ansible_hosts_path
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
         _stdout_logs_path = config.get('DEFAULT', 'LOG_FILE_PLACE') + '*'
         _output_logs_path = config.get('DEFAULT', 'OUTPUT_MD_LOG')
+        _ansible_hosts_path = config.get('DEFAULT', 'ANSIBLE_HOSTS_FILE_PATH')
 
 
 def _recursively(json, strage):
@@ -65,12 +74,30 @@ def _recursively(json, strage):
             tmp.fieldValue = json[key]
             strage.addInfo(tmp)
 
+def _getHostsList(obj, targetkey, lst):
+    for key in obj:
+        if key == targetkey:
+            wobj = obj[key]
+            for host in wobj['hosts']:
+                lst.append(host)
+        else:
+            if isinstance(obj[key], dict):
+                _getHostsList(obj[key], targetkey, lst)
+            elif isinstance(obj[key], list):
+                work_dic = {}
+                index = 0
+                for val in obj[key]:
+                    work_dic[index] = val
+                    index = index + 1
+                _getHostsList(work_dic, targetkey, lst)
+
 
 if __name__ == '__main__':
     # アプリケーション設定読込
     ReadConfig()
 
     # 正規表現パターンを事前コンパイル
+    regex_play = re.compile(PATTERN_PLAY)
     regex_task = re.compile(PATTERN_TASK_ROW)
     regex_taskdate = re.compile(PATTERN_TASK_DATETIME)
     regex_elapsed = re.compile(PATTERN_TASK_ELAPSED_TIME)
@@ -86,6 +113,7 @@ if __name__ == '__main__':
             tasks.log_file_name = logfile
             n_order = 0
 
+            _group_name = ""
             _taskname = ""
             _exec_datetime = DT.now()
             _elasped = TDELTA()
@@ -93,6 +121,12 @@ if __name__ == '__main__':
             str_json = ""
 
             while row_data:
+                # 実行しているグループ名を取得する処理
+                if regex_play.match(row_data):
+                    start_pos = row_data.find('[') + 1
+                    end_pos = row_data.find(']')
+                    _group_name = row_data[start_pos:end_pos]
+
                 # 実行したタスク名
                 if regex_task.match(row_data):
                     start_pos = row_data.find('[') + 1
@@ -102,7 +136,6 @@ if __name__ == '__main__':
                 # いつ実行したか
                 if regex_taskdate.match(row_data):
                     # 日時の取得
-                    #print(row_data)
                     _exec_datetime = DT.strptime(regex_taskdate.match(row_data).group(0), '%A %d %B %Y %H:%M:%S')
                     # playbook開始からの経過時間
                     wkstr = regex_elapsed.search(row_data).group(0)
@@ -140,7 +173,6 @@ if __name__ == '__main__':
                     n_order += 1
                     json_start_flg = True
                     str_json = "{"
-
                     wk = regex_json_start.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
                     tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
@@ -157,7 +189,7 @@ if __name__ == '__main__':
 
             # TASK実行結果一覧表
             listTaskResult = os.path.splitext(os.path.basename(logfile))[0]
-            taskListPath = "{0}Result_{1}_task_list.md".format(_output_logs_path, listTaskResult)
+            taskListPath = "{0}Result_{1}.md".format(_output_logs_path, listTaskResult)
             with open(taskListPath, 'w') as hFnd:
                 title = "# タスク実行結果リスト\n\n"
                 hFnd.write(title)
@@ -166,16 +198,25 @@ if __name__ == '__main__':
                 hFnd.write(tasks.getTaskResultList())
 
             # タスク実行結果詳細出力
-            taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_logs_path, listTaskResult)
-            with open(taskDetailPath, 'w') as f:
-                title = "# タスク実行結果詳細\n\n"
-                f.write(title)
-                subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
-                f.write(subtitle)
+            # ホストごとにファイルを出力
+            # read hosts
+            with open(_ansible_hosts_path, 'r') as hYnd:
+                obj = yaml.safe_load(hYnd)
+                hosts = list()
+                _getHostsList(obj, _group_name, hosts)
+                
+                for host in hosts:
+                    taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_logs_path, host)
 
-                for entity in tasks.row_data:
-                    infos = Results.Results()
-                    f.write(str(entity))
-                    if entity.message != {}:
-                        _recursively(entity.message, infos)
-                        f.write(str(infos))
+                    with open(taskDetailPath, 'w') as f:
+                        title = "# {0} - タスク実行結果詳細\n\n".format(host)
+                        f.write(title)
+                        subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
+                        f.write(subtitle)
+
+                        for entity in filter(lambda x: x.hostname == host, tasks.row_data):
+                            infos = Results.Results()
+                            f.write(str(entity))
+                            if entity.message != {}:
+                                _recursively(entity.message, infos)
+                                f.write(str(infos))
