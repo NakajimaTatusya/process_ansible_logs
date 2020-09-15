@@ -193,7 +193,7 @@ if __name__ == '__main__':
             with open(taskListPath, 'w') as hFnd:
                 title = "# タスク実行結果リスト\n\n"
                 hFnd.write(title)
-                subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
+                subtitle = "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
                 hFnd.write(subtitle)
                 hFnd.write(tasks.getTaskResultList())
 
@@ -211,7 +211,7 @@ if __name__ == '__main__':
                     with open(taskDetailPath, 'w') as f:
                         title = "# {0} - タスク実行結果詳細\n\n".format(host)
                         f.write(title)
-                        subtitle = "## 整形対象ファイル名：{0}\n\n".format(tasks.getLogFileName())
+                        subtitle = "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
                         f.write(subtitle)
 
                         for entity in filter(lambda x: x.hostname == host, tasks.row_data):
