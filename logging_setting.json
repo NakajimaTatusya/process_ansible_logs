@@ -1,0 +1,45 @@
+{
+    "version": 1,
+    "formatters": {
+        "customFormat": {
+            "format": "%(asctime)s [%(levelname)s] [%(process)d, %(processName)s] [%(thread)d,%(threadName)s] %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "customFormat",
+            "level": "INFO",
+            "stream": "ext://sys.stdout"
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "customFormat",
+            "filename": "./app_logs/log_decomposition.log",
+            "maxBytes": 1048576,
+            "backupCount": 3
+        },
+        "formatterfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "customFormat",
+            "filename": "./app_logs/logfile_formatter.log",
+            "maxBytes": 1048576,
+            "backupCount": 3
+        }
+    },
+    "root": {
+        "handlers": ["console"]
+    },
+    "loggers": {
+        "log_decomposition": {
+            "level": "DEBUG",
+            "handlers": ["file"]
+        },
+        "logfile_formatter": {
+            "level": "DEBUG",
+            "handlers": ["formatterfile"]
+        }
+    }
+}
