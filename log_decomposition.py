@@ -32,6 +32,7 @@ from library import Results
 from library import TaskLog
 from library import TaskInfo
 from library import StyleSheet
+from library import Utilities
 
 # ロギング設定
 dictConfig({
@@ -104,7 +105,7 @@ PATTERN_JSON_INFO_START = r'^.*: \[.*\].*=> {'
 PATTERN_JSON_INFO_END = r'^\}$'
 PATTERN_DELETE_ANSIBLE_SGIN = r'^.*: \[.*\] => '
 
-CONFIG_FILE_SECTION_NAME = 'DEFAULT'
+CONFIG_FILE_SECTION_NAME = 'DECOMPOSITION'
 
 _stdout_logs_path = ""
 _output_md_path = ""
@@ -132,9 +133,9 @@ async def write_file(file: str):
     async with aiofiles.open(file, mode='w') as f:
         await f.write(wdata)
     md = markdown.Markdown(extensions=['tables'])
-    #md.convertFile(input=file, output=file + '.html')
     html = style.header + md.convert(wdata) + style.footer
-    async with aiofiles.open(file + '.html', mode='w') as f:
+    htmlpath = "{0}{1}.html".format(_output_html_path, Utilities.PathOperator.getFilenameWithoutExtension(file))
+    async with aiofiles.open(htmlpath, mode='w') as f:
         await f.write(html)
 
 
@@ -283,7 +284,7 @@ if __name__ == '__main__':
             tasklist += "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
             tasklist += tasks.getTaskResultList()
 
-            listTaskResult = os.path.splitext(os.path.basename(logfile))[0]
+            listTaskResult = Utilities.PathOperator.getFilenameWithoutExtension(logfile)
             taskListPath = "{0}Result_{1}.md".format(_output_md_path, listTaskResult)
             data_que.append(tasklist)
             loop = asyncio.get_event_loop()
