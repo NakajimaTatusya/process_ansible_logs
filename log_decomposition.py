@@ -26,7 +26,6 @@ import yaml # pip install pyyaml
 from datetime import datetime as DT
 from datetime import timedelta as TDELTA
 
-from library import decode_unicode_escape
 from library import Result
 from library import Results
 from library import TaskLog
@@ -34,41 +33,7 @@ from library import TaskInfo
 from library import StyleSheet
 from library import Utilities
 
-# ロギング設定
-dictConfig({
-    'version': 1,
-    'formatters': {
-        'customFormat': {
-            'format': '%(asctime)s [%(levelname)s] [%(process)d, %(processName)s] [%(thread)d,%(threadName)s] %(message)s'
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'customFormat',
-            'level': 'INFO',
-            'stream': 'ext://sys.stdout'
-        },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'level': 'DEBUG',
-            'formatter': 'customFormat',
-            'filename': './app_logs/log_decomposition.log',
-            'maxBytes': 1048576,
-            'backupCount': 5
-        },
-    },
-    'root': {
-        'handlers': ['console']
-    },
-    'loggers': {
-        'log_decomposition': {
-            'level': 'DEBUG',
-            'handlers': ['file']
-        }
-    }
-})
-
+# ログレベル定義
 LOG_LEVEL = {
     10: "DEBUG",
     20: "INFO",
@@ -117,7 +82,7 @@ def ReadConfig():
     global _output_html_path
     global _ansible_hosts_path
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(os.path.abspath(__file__)) + '/setting.cfg')
+    config.read(os.path.dirname(os.path.abspath(__file__)) + os.sep + 'setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
         _stdout_logs_path = config.get(CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*'
@@ -179,6 +144,8 @@ def _getHostsList(obj, targetkey, lst):
 
 if __name__ == '__main__':
     # app log
+    with open('logging_setting.json') as f:
+        dictConfig(json.load(f))
     log = getLogger('log_decomposition')
     log.info("The log level setting is {0}.".format(LOG_LEVEL[log.level]))
     startDatetime = DT.now()
@@ -303,8 +270,8 @@ if __name__ == '__main__':
 
                     for entity in filter(lambda x: x.hostname == host, tasks.row_data):
                         infos = Results.Results()
-                        contents += str(entity)
                         if entity.message != {}:
+                            contents += str(entity)
                             _recursively(entity.message, infos)
                             contents += str(infos)
 
