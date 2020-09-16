@@ -1,4 +1,0 @@
-ホスト名    アーキテクチャ  BIOS DATE   BIOS version    TIME ZONE   ディストリビューション  ディストリビューションメジャーバージョン    ディストリビューションバージョン    ドメイン    FQDN    ネットワークインターフェースコネクション名  デフォルトゲートウェイ  DNSドメイン インターフェース名  マックアドレス  IP ADDRESS  NET BIOS 名 
-{% for item in items %}
-{{j2_hostname}} {{j2_architecture}}    {{j2_bios_date}}   {{j2_bios_version}}   {{j2_datetime_tz}}  {{j2_distribution}} {{j2_distribution_major_version}}   {{j2_distribution_version}} {{j2_domain}}   {{j2_fqdn}} {{j2_connection_name}}  {{j2_default_gateway}}  {{j2_dns_domain}}   {{j2_interface_name}}   {{j2_macaddress}}   {{j2_ip_addresses}} {{j2_netbios_name}}
-{% endfor %}

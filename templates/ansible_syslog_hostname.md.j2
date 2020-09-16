@@ -1,0 +1,16 @@
+
+# Ansible System Log フォーマット
+
+## 対象ファイル
+
+* {{ j2_target_log }}
+
+## ログファイル内容一覧
+
+| 日時 | 状態 | メッセージ |
+| :--- | :--: | :--- |
+{%- for item in j2_table_rows %}
+| {{ item.j2_logDateTime }} | {{ item.j2_logStatus }} | {{ item.j2_msg }} |
+{%- endfor %}
+
+EOF
