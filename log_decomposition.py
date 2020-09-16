@@ -149,7 +149,7 @@ if __name__ == '__main__':
     log = getLogger('log_decomposition')
     log.info("The log level setting is {0}.".format(LOG_LEVEL[log.level]))
     startDatetime = DT.now()
-    log.info("log_decomposition {0} START".format(startDatetime))
+    log.info("{0} {1} START".format(os.path.basename(__file__), startDatetime))
 
     log.info("アプリケーション設定の読込")
     ReadConfig()
@@ -281,5 +281,5 @@ if __name__ == '__main__':
                     loop.run_until_complete(write_file(taskDetailPath))
 
     endDatetime = DT.now()
-    log.info("log_decomposition {0} END".format(endDatetime))
+    log.info("{0} {1} END".format(os.path.basename(__file__), endDatetime))
     log.info("処理時間:{0}".format(endDatetime - startDatetime))

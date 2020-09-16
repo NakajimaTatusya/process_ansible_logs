@@ -10,6 +10,7 @@ import glob
 import os
 import json
 import pprint
+import re
 
 from logging.config import dictConfig
 from logging import getLogger
@@ -25,6 +26,8 @@ LOG_LEVEL = {
     40: "ERROR",
     50: "FATAL/CRITICAL/EXCEPTION"
 }
+
+PATTERN_JSON_FORMAT = r'^\{.*\}'
 
 CONFIG_FILE_SECTION_NAME = 'FORMATTER'
 
@@ -44,40 +47,39 @@ if __name__ == '__main__':
     log = getLogger('logfile_formatter')
     log.info("The log level setting is {0}.".format(LOG_LEVEL[log.level]))
     startDatetime = DT.now()
-    log.info("formatter {0} START".format(startDatetime))
+    log.info("{0} {1} START".format(os.path.basename(__file__), startDatetime))
 
     log.info("アプリケーション設定の読込")
     ReadConfig()
 
+    regex_json = re.compile(PATTERN_JSON_FORMAT)
+
     files = glob.glob(_logFilePath)
     cnt = 0
     for logfile in files:
-        if cnt > 1:
-            break
-        print(logfile)
+        log.info("[{0}]を処理しています".format(logfile))
         cnt = cnt + 1
         with open(logfile, 'r') as hf:
             rowdata = hf.readline()
             rowcnt = 1
             while rowdata:
-#                print("読み取った行データ：{0}".format(rowdata))
                 cols = rowdata.split('-')
                 if len(cols) == 3:
-#                    print('{0} {1} {2}'.format(cols[0], cols[1], cols[2]))
                     logDateTime = DT.strptime(cols[0].strip(), '%b %d %Y %H:%M:%S')
                     logStatus = cols[1]
-                    print(cols[2])
                     try:
-                        logmsg = json.loads(cols[2])
+                        json_message = cols[2].split('=>')
+                        for msg in json_message:
+                            msg = msg.strip()
+                            msg = msg.replace('\n', '')
+                            if regex_json.match(msg):
+                                logmsg = json.loads(msg)
                     except json.JSONDecodeError as e:
-                        logmsg = cols[2]
-
-                    #pprint.pprint(logmsg)
+                        log.error(e.msg)
 
                 rowdata = hf.readline()
                 rowcnt = rowcnt + 1
-                print("行カウンター：{0}".format(rowcnt))
 
     endDatetime = DT.now()
-    log.info("log_decomposition {0} END".format(endDatetime))
+    log.info("{0} {1} END".format(os.path.basename(__file__), endDatetime))
     log.info("処理時間:{0}".format(endDatetime - startDatetime))
