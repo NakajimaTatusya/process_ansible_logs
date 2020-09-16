@@ -16,6 +16,7 @@ class PathOperator:
     def getDirWithoutFilename(path: str):
         return os.path.dirname(path) + os.sep
 
+class UnicodeEscape:
     @staticmethod
     def decode_unicode_escape(encode_string):
         """
