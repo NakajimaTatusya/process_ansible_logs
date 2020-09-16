@@ -6,24 +6,89 @@ ansible 標準出力のログをフォーマットする
  strategy : linear strategy
 """
 
-# pip install configparser
-import configparser
-import os
+import aiofiles #pip install aiofiles
+import asyncio
+from collections import deque
+import configparser # pip install configparser
 import glob
-import re
+
+from logging.config import dictConfig
+from logging import getLogger
+
+import markdown
+import sys
 import json
-# pip install pyyaml
-import yaml
+import os
 import pprint
+import re
+import yaml # pip install pyyaml
 
 from datetime import datetime as DT
 from datetime import timedelta as TDELTA
 
 from library import decode_unicode_escape
-from library import TaskLog
-from library import TaskInfo
 from library import Result
 from library import Results
+from library import TaskLog
+from library import TaskInfo
+from library import StyleSheet
+
+# ロギング設定
+dictConfig({
+    'version': 1,
+    'formatters': {
+        'customFormat': {
+            'format': '%(asctime)s [%(levelname)s] [%(process)d, %(processName)s] [%(thread)d,%(threadName)s] %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'customFormat',
+            'level': 'INFO',
+            'stream': 'ext://sys.stdout'
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'DEBUG',
+            'formatter': 'customFormat',
+            'filename': './app_logs/log_decomposition.log',
+            'maxBytes': 1048576,
+            'backupCount': 5
+        },
+    },
+    'root': {
+        'handlers': ['console']
+    },
+    'loggers': {
+        'log_decomposition': {
+            'level': 'DEBUG',
+            'handlers': ['file']
+        }
+    }
+})
+
+LOG_LEVEL = {
+    10: "DEBUG",
+    20: "INFO",
+    30: "WARNING",
+    40: "ERROR",
+    50: "FATAL/CRITICAL/EXCEPTION"
+}
+
+# ハンドラーをオーバーライドできれば、コンソール出力の文字色を変更できると思われる
+#def set_color(org_string, level=None):
+#    color_levels = {
+#        10: "\033[36m{}\033[0m",       # DEBUG
+#        20: "\033[32m{}\033[0m",       # INFO
+#        30: "\033[33m{}\033[0m",       # WARNING
+#        40: "\033[31m{}\033[0m",       # ERROR
+#        50: "\033[7;31;31m{}\033[0m"   # FATAL/CRITICAL/EXCEPTION
+#    }
+#    if level is None:
+#        return color_levels[20].format(org_string)
+#    else:
+#        return color_levels[int(level)].format(org_string)
 
 # Play 行にマッチング
 PATTERN_PLAY = r'^PLAY \[.*\]'
@@ -39,20 +104,38 @@ PATTERN_JSON_INFO_START = r'^.*: \[.*\].*=> {'
 PATTERN_JSON_INFO_END = r'^\}$'
 PATTERN_DELETE_ANSIBLE_SGIN = r'^.*: \[.*\] => '
 
+CONFIG_FILE_SECTION_NAME = 'DEFAULT'
+
 _stdout_logs_path = ""
-_output_logs_path = ""
+_output_md_path = ""
+_output_html_path = ""
 _ansible_hosts_path = ""
 def ReadConfig():
     global _stdout_logs_path
-    global _output_logs_path
+    global _output_md_path
+    global _output_html_path
     global _ansible_hosts_path
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
-        _stdout_logs_path = config.get('DEFAULT', 'LOG_FILE_PLACE') + '*'
-        _output_logs_path = config.get('DEFAULT', 'OUTPUT_MD_LOG')
-        _ansible_hosts_path = config.get('DEFAULT', 'ANSIBLE_HOSTS_FILE_PATH')
+        _stdout_logs_path = config.get(CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*'
+        _output_md_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_MD_FILES')
+        _output_html_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_HTML_FILES')
+        _ansible_hosts_path = config.get(CONFIG_FILE_SECTION_NAME, 'ANSIBLE_HOSTS_FILE_PATH')
+
+
+data_que = deque()
+async def write_file(file: str):
+    style = StyleSheet.LogStyle()
+    wdata = data_que.popleft()
+    async with aiofiles.open(file, mode='w') as f:
+        await f.write(wdata)
+    md = markdown.Markdown(extensions=['tables'])
+    #md.convertFile(input=file, output=file + '.html')
+    html = style.header + md.convert(wdata) + style.footer
+    async with aiofiles.open(file + '.html', mode='w') as f:
+        await f.write(html)
 
 
 def _recursively(json, strage):
@@ -74,6 +157,7 @@ def _recursively(json, strage):
             tmp.fieldValue = json[key]
             strage.addInfo(tmp)
 
+
 def _getHostsList(obj, targetkey, lst):
     for key in obj:
         if key == targetkey:
@@ -93,10 +177,16 @@ def _getHostsList(obj, targetkey, lst):
 
 
 if __name__ == '__main__':
-    # アプリケーション設定読込
+    # app log
+    log = getLogger('log_decomposition')
+    log.info("The log level setting is {0}.".format(LOG_LEVEL[log.level]))
+    startDatetime = DT.now()
+    log.info("log_decomposition {0} START".format(startDatetime))
+
+    log.info("アプリケーション設定の読込")
     ReadConfig()
 
-    # 正規表現パターンを事前コンパイル
+    log.info("正規表現パターンを事前コンパイル")
     regex_play = re.compile(PATTERN_PLAY)
     regex_task = re.compile(PATTERN_TASK_ROW)
     regex_taskdate = re.compile(PATTERN_TASK_DATETIME)
@@ -107,6 +197,7 @@ if __name__ == '__main__':
 
     stdout_log_files = glob.glob(_stdout_logs_path)
     for logfile in stdout_log_files:
+        log.info("ファイル名：{0} を処理しています".format(logfile))
         with open(logfile, 'r') as fHnd:
             row_data = fHnd.readline()
             tasks = TaskLog.TaskLog()
@@ -187,36 +278,40 @@ if __name__ == '__main__':
                 
                 row_data = fHnd.readline()
 
-            # TASK実行結果一覧表
-            listTaskResult = os.path.splitext(os.path.basename(logfile))[0]
-            taskListPath = "{0}Result_{1}.md".format(_output_logs_path, listTaskResult)
-            with open(taskListPath, 'w') as hFnd:
-                title = "# タスク実行結果リスト\n\n"
-                hFnd.write(title)
-                subtitle = "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
-                hFnd.write(subtitle)
-                hFnd.write(tasks.getTaskResultList())
+            log.info("タスク実行結果一覧表を出力します")
+            tasklist = "# タスク実行結果リスト\n\n"
+            tasklist += "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
+            tasklist += tasks.getTaskResultList()
 
-            # タスク実行結果詳細出力
-            # ホストごとにファイルを出力
-            # read hosts
+            listTaskResult = os.path.splitext(os.path.basename(logfile))[0]
+            taskListPath = "{0}Result_{1}.md".format(_output_md_path, listTaskResult)
+            data_que.append(tasklist)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(write_file(taskListPath))
+
+            log.info("タスク実行結果詳細をホストごとに出力します")
             with open(_ansible_hosts_path, 'r') as hYnd:
                 obj = yaml.safe_load(hYnd)
                 hosts = list()
                 _getHostsList(obj, _group_name, hosts)
                 
                 for host in hosts:
-                    taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_logs_path, host)
+                    contents = ""
+                    contents = "# {0} - タスク実行結果詳細\n\n".format(host)
+                    contents += "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
 
-                    with open(taskDetailPath, 'w') as f:
-                        title = "# {0} - タスク実行結果詳細\n\n".format(host)
-                        f.write(title)
-                        subtitle = "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
-                        f.write(subtitle)
+                    for entity in filter(lambda x: x.hostname == host, tasks.row_data):
+                        infos = Results.Results()
+                        contents += str(entity)
+                        if entity.message != {}:
+                            _recursively(entity.message, infos)
+                            contents += str(infos)
 
-                        for entity in filter(lambda x: x.hostname == host, tasks.row_data):
-                            infos = Results.Results()
-                            f.write(str(entity))
-                            if entity.message != {}:
-                                _recursively(entity.message, infos)
-                                f.write(str(infos))
+                    taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_md_path, host)
+                    data_que.append(contents)
+                    loop = asyncio.get_event_loop()
+                    loop.run_until_complete(write_file(taskDetailPath))
+
+    endDatetime = DT.now()
+    log.info("log_decomposition {0} END".format(endDatetime))
+    log.info("処理時間:{0}".format(endDatetime - startDatetime))
