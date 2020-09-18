@@ -42,7 +42,7 @@ LOG_LEVEL = {
     50: "FATAL/CRITICAL/EXCEPTION"
 }
 
-# ハンドラーをオーバーライドできれば、コンソール出力の文字色を変更できると思われる
+# ハンドラーをオーバーライドできれば、ログファイルに影響を与えずにコンソール出力の文字色を変更できると思われる
 #def set_color(org_string, level=None):
 #    color_levels = {
 #        10: "\033[36m{}\033[0m",       # DEBUG
@@ -77,6 +77,9 @@ _output_md_path = ""
 _output_html_path = ""
 _ansible_hosts_path = ""
 def ReadConfig():
+    """
+    このアプリの設定を読み込む
+    """
     global _stdout_logs_path
     global _output_md_path
     global _output_html_path
@@ -93,6 +96,9 @@ def ReadConfig():
 
 data_que = deque()
 async def write_file(file: str):
+    """
+    MD、HTMLを非同期出力する
+    """
     style = StyleSheet.LogStyle()
     wdata = data_que.popleft()
     async with aiofiles.open(file, mode='w') as f:
@@ -105,6 +111,9 @@ async def write_file(file: str):
 
 
 def _recursively(json, strage):
+    """
+    JSON を再帰処理で分解
+    """
     for key in json:
         if isinstance(json[key], dict):
             _recursively(json[key], strage)
@@ -125,6 +134,9 @@ def _recursively(json, strage):
 
 
 def _getHostsList(obj, targetkey, lst):
+    """
+    Ansible Inventory File(YAML) から実行対象ホスト一覧を取得する
+    """
     for key in obj:
         if key == targetkey:
             wobj = obj[key]

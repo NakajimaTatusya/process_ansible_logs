@@ -2,7 +2,7 @@
 
 * 家の PlayBook 実行方法に依存していると思われる、複雑なやり方に対応できるかは不明
 * 標準出力のログ
-* ログファイル
+* Ansible 自身のログファイル
 
 ## 標準出力のログ
 
@@ -16,9 +16,13 @@
 ## 目標
 
 * MD File に加工する
-* Excel File に加工する
+* HTML File に加工する
 * MD → Word 変換を行う
-* 画面で参照できるようにする
+
+## 効果
+
+* Pythonの独習
+* 提出用ドキュメント化
 
 ## ソースコード
 
@@ -29,4 +33,3 @@
 | log_formatter.py | ansible log ファイルを整形する |
 | setting.cfg | アプリケーション設定ファイル |
 | unicode_escape_to_character.py | unicode-escape されたマルチバイト文字列を元に戻す |
-
