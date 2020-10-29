@@ -88,7 +88,7 @@ def ReadConfig():
     config.read(os.path.dirname(os.path.abspath(__file__)) + os.sep + 'setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
-        _stdout_logs_path = config.get(CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*'
+        _stdout_logs_path = config.get(CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*.log'
         _output_md_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_MD_FILES')
         _output_html_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_HTML_FILES')
         _ansible_hosts_path = config.get(CONFIG_FILE_SECTION_NAME, 'ANSIBLE_HOSTS_FILE_PATH')
@@ -177,6 +177,8 @@ if __name__ == '__main__':
 
     stdout_log_files = glob.glob(_stdout_logs_path)
     for logfile in stdout_log_files:
+        if os.path.isfile(logfile) != True:
+            continue
         log.info("ファイル名：{0} を処理しています".format(logfile))
         with open(logfile, 'r') as fHnd:
             row_data = fHnd.readline()
