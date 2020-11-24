@@ -7,7 +7,7 @@ class LogStyle:
 <!DOCTYPE html>
 <html>
 <head>
-<title>Result_192.168.1.11_Detail.md</title>
+<title>Ansible Log Report</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
