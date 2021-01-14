@@ -6,10 +6,10 @@ ansible 標準出力のログをフォーマットする
  strategy : linear strategy
 """
 
-import aiofiles #pip install aiofiles
+import aiofiles  # pip install aiofiles
 import asyncio
 from collections import deque
-import configparser # pip install configparser
+import configparser  # pip install configparser
 import glob
 
 from logging.config import dictConfig
@@ -21,7 +21,7 @@ import json
 import os
 import pprint
 import re
-import yaml # pip install pyyaml
+import yaml  # pip install pyyaml
 
 from datetime import datetime as DT
 from datetime import timedelta as TDELTA
@@ -43,7 +43,7 @@ LOG_LEVEL = {
 }
 
 # ハンドラーをオーバーライドできれば、ログファイルに影響を与えずにコンソール出力の文字色を変更できると思われる
-#def set_color(org_string, level=None):
+# def set_color(org_string, level=None):
 #    color_levels = {
 #        10: "\033[36m{}\033[0m",       # DEBUG
 #        20: "\033[32m{}\033[0m",       # INFO
@@ -76,6 +76,8 @@ _stdout_logs_path = ""
 _output_md_path = ""
 _output_html_path = ""
 _ansible_hosts_path = ""
+
+
 def ReadConfig():
     """
     このアプリの設定を読み込む
@@ -85,16 +87,23 @@ def ReadConfig():
     global _output_html_path
     global _ansible_hosts_path
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(os.path.abspath(__file__)) + os.sep + 'setting.cfg')
+    config.read(os.path.dirname(os.path.abspath(
+        __file__)) + os.sep + 'setting.cfg')
     config.sections()
     if 'DEFAULT' in config:
-        _stdout_logs_path = config.get(CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*.log'
-        _output_md_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_MD_FILES')
-        _output_html_path = config.get(CONFIG_FILE_SECTION_NAME, 'OUTPUT_HTML_FILES')
-        _ansible_hosts_path = config.get(CONFIG_FILE_SECTION_NAME, 'ANSIBLE_HOSTS_FILE_PATH')
+        _stdout_logs_path = config.get(
+            CONFIG_FILE_SECTION_NAME, 'LOG_FILE_PLACE') + '*.log'
+        _output_md_path = config.get(
+            CONFIG_FILE_SECTION_NAME, 'OUTPUT_MD_FILES')
+        _output_html_path = config.get(
+            CONFIG_FILE_SECTION_NAME, 'OUTPUT_HTML_FILES')
+        _ansible_hosts_path = config.get(
+            CONFIG_FILE_SECTION_NAME, 'ANSIBLE_HOSTS_FILE_PATH')
 
 
 data_que = deque()
+
+
 async def write_file(file: str):
     """
     MD、HTMLを非同期出力する
@@ -105,7 +114,8 @@ async def write_file(file: str):
         await f.write(wdata)
     md = markdown.Markdown(extensions=['tables'])
     html = style.header + md.convert(wdata) + style.footer
-    htmlpath = "{0}{1}.html".format(_output_html_path, Utilities.PathOperator.getFilenameWithoutExtension(file))
+    htmlpath = "{0}{1}.html".format(
+        _output_html_path, Utilities.PathOperator.getFilenameWithoutExtension(file))
     async with aiofiles.open(htmlpath, mode='w') as f:
         await f.write(html)
 
@@ -209,17 +219,18 @@ if __name__ == '__main__':
                 # いつ実行したか
                 if regex_taskdate.match(row_data):
                     # 日時の取得
-                    _exec_datetime = DT.strptime(regex_taskdate.match(row_data).group(0), '%A %d %B %Y %H:%M:%S')
+                    _exec_datetime = DT.strptime(regex_taskdate.match(
+                        row_data).group(0), '%A %d %B %Y %H:%M:%S')
                     # playbook開始からの経過時間
                     wkstr = regex_elapsed.search(row_data).group(0)
                     _elasped = TDELTA(
-                        days = 0,
-                        seconds = int(wkstr.split(':')[2].split('.')[0]),
-                        microseconds = 0,
-                        milliseconds = int(wkstr.split(':')[2].split('.')[1]),
-                        minutes = int(wkstr.split(':')[1]),
-                        hours = int(wkstr.split(':')[0]),
-                        weeks = 0
+                        days=0,
+                        seconds=int(wkstr.split(':')[2].split('.')[0]),
+                        microseconds=0,
+                        milliseconds=int(wkstr.split(':')[2].split('.')[1]),
+                        minutes=int(wkstr.split(':')[1]),
+                        hours=int(wkstr.split(':')[0]),
+                        weeks=0
                     )
 
                 # 実行結果、リモートホスト名
@@ -230,7 +241,8 @@ if __name__ == '__main__':
 
                     wk = regex_result.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
-                    tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
+                    tasks.row_data[n_order -
+                                   1].hostname = wk[1][2:wk[1].find(']')]
                     tasks.row_data[n_order - 1].name = _taskname
                     tasks.row_data[n_order - 1].result_status = wk[0]
                     tasks.row_data[n_order - 1].exec_datetime = _exec_datetime
@@ -248,7 +260,8 @@ if __name__ == '__main__':
                     str_json = "{"
                     wk = regex_json_start.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
-                    tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
+                    tasks.row_data[n_order -
+                                   1].hostname = wk[1][2:wk[1].find(']')]
                     tasks.row_data[n_order - 1].name = _taskname
                     tasks.row_data[n_order - 1].result_status = wk[0]
                     tasks.row_data[n_order - 1].exec_datetime = _exec_datetime
@@ -257,7 +270,7 @@ if __name__ == '__main__':
                 if regex_json_end.match(row_data):
                     json_start_flg = False
                     tasks.row_data[n_order - 1].message = json.loads(str_json)
-                
+
                 row_data = fHnd.readline()
 
             log.info("タスク実行結果一覧表を出力します")
@@ -265,8 +278,10 @@ if __name__ == '__main__':
             tasklist += "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
             tasklist += tasks.getTaskResultList()
 
-            listTaskResult = Utilities.PathOperator.getFilenameWithoutExtension(logfile)
-            taskListPath = "{0}Result_{1}.md".format(_output_md_path, listTaskResult)
+            listTaskResult = Utilities.PathOperator.getFilenameWithoutExtension(
+                logfile)
+            taskListPath = "{0}Result_{1}.md".format(
+                _output_md_path, listTaskResult)
             data_que.append(tasklist)
             loop = asyncio.get_event_loop()
             loop.run_until_complete(write_file(taskListPath))
@@ -276,11 +291,12 @@ if __name__ == '__main__':
                 obj = yaml.safe_load(hYnd)
                 hosts = list()
                 _getHostsList(obj, _group_name, hosts)
-                
+
                 for host in hosts:
                     contents = ""
                     contents = "# {0} - タスク実行結果詳細\n\n".format(host)
-                    contents += "## 取込ログファイル名：{0}\n\n".format(tasks.getLogFileName())
+                    contents += "## 取込ログファイル名：{0}\n\n".format(
+                        tasks.getLogFileName())
 
                     for entity in filter(lambda x: x.hostname == host, tasks.row_data):
                         infos = Results.Results()
@@ -289,7 +305,8 @@ if __name__ == '__main__':
                             _recursively(entity.message, infos)
                             contents += str(infos)
 
-                    taskDetailPath = "{0}Result_{1}_Detail.md".format(_output_md_path, host)
+                    taskDetailPath = "{0}Result_{1}_{2}_Detail.md".format(
+                        _output_md_path, host, Utilities.PathOperator.partialExtraction(tasks.getLogFileName()))
                     data_que.append(contents)
                     loop = asyncio.get_event_loop()
                     loop.run_until_complete(write_file(taskDetailPath))

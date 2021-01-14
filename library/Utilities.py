@@ -7,6 +7,7 @@ import codecs
 
 PATTERN_UNICODE_ESCAPE = r'\\u([0-9]|[a-z]){4}'
 
+
 class PathOperator:
     @staticmethod
     def getFilenameWithoutExtension(path: str):
@@ -15,6 +16,11 @@ class PathOperator:
     @staticmethod
     def getDirWithoutFilename(path: str):
         return os.path.dirname(path) + os.sep
+
+    @staticmethod
+    def partialExtraction(path: str):
+        return ''.join(re.findall('win.*\.', path))[:-1]
+
 
 class UnicodeEscape:
     @staticmethod
@@ -25,5 +31,6 @@ class UnicodeEscape:
         decode_string = encode_string
         matchs = re.finditer(r'\\u([0-9]|[a-z]){4}', encode_string)
         for wk in matchs:
-            decode_string = decode_string.replace(wk.group(), codecs.decode(wk.group(), 'unicode-escape'))
+            decode_string = decode_string.replace(
+                wk.group(), codecs.decode(wk.group(), 'unicode-escape'))
         return decode_string
