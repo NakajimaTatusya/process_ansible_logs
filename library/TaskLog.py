@@ -17,14 +17,14 @@ class TaskLog:
         strWk = "| # | HOSTNAME | TASK 名 | 結果 | 実行日時 | 経過時間 |\n"
         strWk += "| ---: | :--- | :--- | :--- | :--- | :--- |\n"
         for entity in self.row_data:
-            if "ok" == entity.result_status:
-                strWk += constOK.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
+            if "fatal" == entity.result_status:
+                strWk += constFatal.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
             elif "skipping" == entity.result_status:
                 strWk += constSkipping.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
             elif "changed" == entity.result_status:
                 strWk += constChanged.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
             else:
-                strWk += constFatal.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
+                strWk += constOK.format(entity.task_order, entity.hostname, entity.name, entity.result_status, entity.exec_datetime, entity.elasped)
         return strWk
 
     def getLogFileName(self):
