@@ -16,10 +16,8 @@ from logging.config import dictConfig
 from logging import getLogger
 
 import markdown
-import sys
 import json
 import os
-import pprint
 import re
 import yaml  # pip install pyyaml
 
@@ -187,7 +185,7 @@ if __name__ == '__main__':
 
     stdout_log_files = glob.glob(_stdout_logs_path)
     for logfile in stdout_log_files:
-        if os.path.isfile(logfile) != True:
+        if not os.path.isfile(logfile):
             continue
         log.info("ファイル名：{0} を処理しています".format(logfile))
         with open(logfile, 'r') as fHnd:
@@ -241,8 +239,7 @@ if __name__ == '__main__':
 
                     wk = regex_result.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
-                    tasks.row_data[n_order -
-                                   1].hostname = wk[1][2:wk[1].find(']')]
+                    tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
                     tasks.row_data[n_order - 1].name = _taskname
                     tasks.row_data[n_order - 1].result_status = wk[0]
                     tasks.row_data[n_order - 1].exec_datetime = _exec_datetime
@@ -260,8 +257,7 @@ if __name__ == '__main__':
                     str_json = "{"
                     wk = regex_json_start.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
-                    tasks.row_data[n_order -
-                                   1].hostname = wk[1][2:wk[1].find(']')]
+                    tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
                     tasks.row_data[n_order - 1].name = _taskname
                     tasks.row_data[n_order - 1].result_status = wk[0]
                     tasks.row_data[n_order - 1].exec_datetime = _exec_datetime
@@ -287,6 +283,8 @@ if __name__ == '__main__':
             loop.run_until_complete(write_file(taskListPath))
 
             log.info("タスク実行結果詳細をホストごとに出力します")
+            yaml.SafeLoader.add_multi_constructor(
+                '!', lambda loader, suffix, node: None)
             with open(_ansible_hosts_path, 'r') as hYnd:
                 obj = yaml.safe_load(hYnd)
                 hosts = list()
