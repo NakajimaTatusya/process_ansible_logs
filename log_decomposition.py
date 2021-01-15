@@ -276,7 +276,7 @@ if __name__ == '__main__':
 
             listTaskResult = Utilities.PathOperator.getFilenameWithoutExtension(
                 logfile)
-            taskListPath = "{0}Result_{1}.md".format(
+            taskListPath = "{0}task_result_{1}.md".format(
                 _output_md_path, listTaskResult)
             data_que.append(tasklist)
             loop = asyncio.get_event_loop()
@@ -290,7 +290,11 @@ if __name__ == '__main__':
                 hosts = list()
                 _getHostsList(obj, _group_name, hosts)
 
+                #hostswkentities = {x.hostname: x for x in tasks.row_data}.values()
+                #for entity in hostswkentities:
+                #    hosts.append(entity.hostname)
                 for host in hosts:
+                    log.debug(f"抽出対象ホスト:{(host):s}")
                     contents = ""
                     contents = "# {0} - タスク実行結果詳細\n\n".format(host)
                     contents += "## 取込ログファイル名：{0}\n\n".format(
@@ -303,8 +307,7 @@ if __name__ == '__main__':
                             _recursively(entity.message, infos)
                             contents += str(infos)
 
-                    taskDetailPath = "{0}Result_{1}_{2}_Detail.md".format(
-                        _output_md_path, host, Utilities.PathOperator.partialExtraction(tasks.getLogFileName()))
+                    taskDetailPath = "{0}detail_result_{1}_{2}.md".format(_output_md_path, host, listTaskResult)
                     data_que.append(contents)
                     loop = asyncio.get_event_loop()
                     loop.run_until_complete(write_file(taskDetailPath))
