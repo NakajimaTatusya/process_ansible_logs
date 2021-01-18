@@ -255,6 +255,13 @@ if __name__ == '__main__':
                     n_order += 1
                     json_start_flg = True
                     str_json = "{"
+                    # 一行出力への対応
+                    if re.match('^.*: \[.*\]: .* => \{.*\}$', row_data):
+                        str_json = ''.join(re.findall('\{.*\}$', row_data))
+                        tasks.row_data[n_order - 1].message = json.loads(str_json)
+                        log.debug(f"一行JSON出力 :{(str_json):s}")
+                        json_start_flg = False
+
                     wk = regex_json_start.match(row_data).group(0).split(':')
                     tasks.row_data[n_order - 1].task_order = n_order
                     tasks.row_data[n_order - 1].hostname = wk[1][2:wk[1].find(']')]
@@ -265,6 +272,7 @@ if __name__ == '__main__':
 
                 if regex_json_end.match(row_data):
                     json_start_flg = False
+                    log.debug(f"JSON STRING :{(str_json):s}")
                     tasks.row_data[n_order - 1].message = json.loads(str_json)
 
                 row_data = fHnd.readline()
@@ -290,9 +298,9 @@ if __name__ == '__main__':
                 hosts = list()
                 _getHostsList(obj, _group_name, hosts)
 
-                #hostswkentities = {x.hostname: x for x in tasks.row_data}.values()
-                #for entity in hostswkentities:
-                #    hosts.append(entity.hostname)
+                # hostswkentities = {x.hostname: x for x in tasks.row_data}.values()
+                # for entity in hostswkentities:
+                #     hosts.append(entity.hostname)
                 for host in hosts:
                     log.debug(f"抽出対象ホスト:{(host):s}")
                     contents = ""
