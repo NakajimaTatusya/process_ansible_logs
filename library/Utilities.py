@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 # coding:utf-8
 
+import codecs
+from datetime import datetime as DT
+import glob
 import os
 import re
-import codecs
 
 PATTERN_UNICODE_ESCAPE = r'\\u([0-9]|[a-z]){4}'
 
@@ -20,6 +22,20 @@ class PathOperator:
     @staticmethod
     def partialExtraction(path: str):
         return ''.join(re.findall('win.*\.', path))[:-1]
+
+    @staticmethod
+    def getFilefullpathList(path: str, filedate: str = None):
+        """
+        summary:
+            対象のディレクトリパスから、ファイルリストを作成して返す
+            filedateパラメータが指定されていない場合は、実行日を設定する（YYYYMMDD）
+        args:
+            path: パス（*.logなどを指定可能）
+            filedate: YYYYMMDD形式で文字列指定すると、ファイル名に含まれる日付でフィルタ
+        """
+        if not filedate:
+            filedate = DT.now().strftime('%Y%m%d')
+        return [x for x in glob.glob(pathname=path) if re.search(f".*{(filedate)}.*", x)]
 
 
 class UnicodeEscape:

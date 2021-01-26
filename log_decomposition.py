@@ -183,7 +183,7 @@ if __name__ == '__main__':
     regex_json_start = re.compile(PATTERN_JSON_INFO_START)
     regex_json_end = re.compile(PATTERN_JSON_INFO_END)
 
-    stdout_log_files = glob.glob(_stdout_logs_path)
+    stdout_log_files = Utilities.PathOperator.getFilefullpathList(_stdout_logs_path)
     for logfile in stdout_log_files:
         if not os.path.isfile(logfile):
             continue
